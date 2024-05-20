@@ -17,7 +17,7 @@
   "description": "final project for JavaScript 330 course",
   "main": "index.js",
   "scripts": {
-    "test": "jest --runInBand"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
