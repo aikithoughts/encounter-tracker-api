@@ -1,7 +1,5 @@
 const mongoose = require("mongoose");
 const models = [
-  require("./models/item"),
-  require("./models/order"),
   require("./models/user"),
   require("./models/combatant"),
   require("./models/encounter")
