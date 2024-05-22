@@ -159,6 +159,39 @@ describe("/encounter", () => {
       });
     });
 
+    describe('GET /encounters/:id/user', () => {
+      let encounter0Id, encounter1Id;
+      beforeEach(async () => {
+        const res0 = await request(server)
+          .post("/encounters")
+          .set("Authorization", "Bearer " + token0)
+          .send([combatants[0], combatants[1], combatants[1]].map((i) => i._id));
+        encounter0Id = res0.body._id;
+        const res1 = await request(server)
+          .post("/encounters")
+          .set("Authorization", "Bearer " + adminToken)
+          .send([combatants[1]].map((i) => i._id));
+        encounter1Id = res1.body._id;
+      });
+      it('should return the user for the encounter', async () => {
+
+        const res = await request(server)
+          .get(`/encounters/${encounter0Id}/user`);
+    
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty('_id'); // Assuming the user object has an _id property
+      });
+    
+      it('should return 404 if the encounter does not exist', async () => {
+        const nonExistentId = new mongoose.Types.ObjectId(); // This will generate a new unique ObjectId
+    
+        const response = await request(server)
+          .get(`/encounters/${nonExistentId}/user`);
+    
+        expect(response.status).toBe(404);
+      });
+    });
+
     describe("GET /:id", () => {
       let encounter0Id, encounter1Id;
       beforeEach(async () => {

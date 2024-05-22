@@ -82,6 +82,20 @@ router.put('/:id', isAuthenticated, async (req, res) => {
     }
 });
 
+// Get a user for a specific encounter
+router.get('/:id/user', async (req, res) => {
+    console.log("in get user for encounter");
+    try {
+      console.log("get user for encounter", req.params.id);
+      const user = await encounterDAO.getUserForEncounter(req.params.id);
+      if (!user) {
+        return res.status(404).send('User not found');
+      }
+      res.json(user);
+    } catch (error) {
+      res.status(500).send('Internal server error');
+    }
+  });
 
 // Get a specific encounter by ID
 router.get('/:id', isAuthenticated, async (req, res) => {
@@ -112,6 +126,8 @@ router.get('/:id', isAuthenticated, async (req, res) => {
         res.status(500).send("Internal server error");
     }
 });
+
+
 
 // Get all encounters
 router.get('/', isAuthenticated, async (req, res) => {
