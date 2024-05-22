@@ -40,6 +40,25 @@ router.put('/:id', isAuthenticated, async (req, res) => {
     try {
         const encounterId = req.params.id;
         const combatantIds = req.body;
+        const userId = req.userId; // Assuming the user ID is available in the request after authentication
+
+        // Get the user
+        const user = await userDAO.getUserById(userId);
+
+        // Fetch the encounter from the database
+        const encounter = await encounterDAO.getEncounterById(encounterId);
+
+        console.log("does encounter exist?", encounter);
+
+        // Check if the encounter exists
+        if (!encounter) {
+            console.log("no?");
+            return res.status(400).send("Encounter not found");
+        }
+        // Make sure the user is the owner of the encounter or has admin role
+        if (encounter.userId.toString() !== userId && !user.roles.includes("admin")) {
+            return res.status(404).send("Unauthorized request.");
+        }
 
         // Validate each combatant ID
         for (const combatantId of combatantIds) {
@@ -62,6 +81,7 @@ router.put('/:id', isAuthenticated, async (req, res) => {
         res.status(500).send("Internal server error");
     }
 });
+
 
 // Get a specific encounter by ID
 router.get('/:id', isAuthenticated, async (req, res) => {

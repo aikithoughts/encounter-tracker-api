@@ -17,8 +17,7 @@
   "description": "final project for JavaScript 330 course",
   "main": "index.js",
   "scripts": {
-    "test": "jest --runInBand",
-    "testWithCoverage": "jest --coverage --runInBand"
+    "test": "jest --runInBand --coverage --coverageDirectory='coverage'"
   },
   "repository": {
     "type": "git",

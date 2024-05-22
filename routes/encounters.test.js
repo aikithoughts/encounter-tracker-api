@@ -1,6 +1,7 @@
 const request = require("supertest");
 const server = require("../server");
 const testUtils = require("../test-utils");
+const mongoose = require("mongoose");
 
 const User = require("../models/user");
 const Combatant = require("../models/combatant");
@@ -119,6 +120,42 @@ describe("/encounter", () => {
         expect(res.statusCode).toEqual(400);
         const storedEncounter = await Encounter.findOne().lean();
         expect(storedEncounter).toBeNull();
+      });
+    });
+
+    describe("PUT /:id", () => {
+      let encounter0Id, encounter1Id;
+      beforeEach(async () => {
+        const res0 = await request(server)
+          .post("/encounters")
+          .set("Authorization", "Bearer " + token0)
+          .send([combatants[0], combatants[1], combatants[1]].map((i) => i._id));
+        encounter0Id = res0.body._id;
+        const res1 = await request(server)
+          .post("/encounters")
+          .set("Authorization", "Bearer " + adminToken)
+          .send([combatants[1]].map((i) => i._id));
+        encounter1Id = res1.body._id;
+      });
+      it("should send 200 to normal user and update encounter", async () => {
+        const res = await request(server)
+          .put("/encounters/" + encounter0Id)
+          .set("Authorization", "Bearer " + token0)
+          .send(combatants.map((i) => i._id));
+        expect(res.statusCode).toEqual(200);
+        const storedEncounter = await Encounter.findOne().lean();
+        expect(storedEncounter).toMatchObject({
+          combatants: combatants.map((i) => i._id),
+          userId: (await User.findOne({ email: user0.email }).lean())._id,
+        });
+      });
+      it("should send 400 with a bad encounter _id", async () => {
+        const fakeEncounterId = new mongoose.Types.ObjectId();
+        const res = await request(server)
+          .put("/encounters/" + fakeEncounterId)
+          .set("Authorization", "Bearer " + adminToken)
+          .send([combatants[1]].map((i) => i._id));
+        expect(res.statusCode).toEqual(400);
       });
     });
 
