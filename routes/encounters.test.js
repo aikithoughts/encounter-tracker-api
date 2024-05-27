@@ -92,31 +92,36 @@ describe("/encounter", () => {
         const res = await request(server)
           .post("/encounters")
           .set("Authorization", "Bearer " + token0)
-          .send(combatants.map((i) => i._id));
+         // .send(combatants.map((i) => i._id));
+         .send( {name: "Test", combatantIds: combatants.map((i) => i._id) })
         expect(res.statusCode).toEqual(200);
         const storedEncounter = await Encounter.findOne().lean();
         expect(storedEncounter).toMatchObject({
           combatants: combatants.map((i) => i._id),
           userId: (await User.findOne({ email: user0.email }).lean())._id,
+          name: "Test"
         });
       });
       it("should send 200 to admin user and create encounter with repeat combatants", async () => {
         const res = await request(server)
           .post("/encounters")
           .set("Authorization", "Bearer " + adminToken)
-          .send([combatants[1], combatants[1], combatants[0]].map((i) => i._id));
+          .send({ name: "Test", combatantIds: [combatants[1], combatants[1], combatants[0]].map((i) => i._id) });
         expect(res.statusCode).toEqual(200);
         const storedEncounter = await Encounter.findOne().lean();
         expect(storedEncounter).toMatchObject({
           combatants: [combatants[1]._id, combatants[1]._id, combatants[0]._id],
           userId: (await User.findOne({ email: user1.email }))._id,
+          name: "Test"
         });
       });
       it("should send 400 with a bad item _id", async () => {
+        const encounterName = "Test";
+        const combatantIds = [combatants[1], "5f1b8d9ca0ef055e6e5a1f6b"].map((i) => i._id);
         const res = await request(server)
           .post("/encounters")
           .set("Authorization", "Bearer " + adminToken)
-          .send([combatants[1], "5f1b8d9ca0ef055e6e5a1f6b"].map((i) => i._id));
+          .send({ name: encounterName, combatantIds: [combatants[1], "5f1b8d9ca0ef055e6e5a1f6b"].map((i) => i._id) });
         expect(res.statusCode).toEqual(400);
         const storedEncounter = await Encounter.findOne().lean();
         expect(storedEncounter).toBeNull();
@@ -129,19 +134,19 @@ describe("/encounter", () => {
         const res0 = await request(server)
           .post("/encounters")
           .set("Authorization", "Bearer " + token0)
-          .send([combatants[0], combatants[1], combatants[1]].map((i) => i._id));
+          .send({ name: "encounter0", combatantIds: [combatants[0], combatants[1], combatants[1]].map((i) => i._id)});
         encounter0Id = res0.body._id;
         const res1 = await request(server)
           .post("/encounters")
           .set("Authorization", "Bearer " + adminToken)
-          .send([combatants[1]].map((i) => i._id));
+          .send({ name: "encounter1", combatantIds: [combatants[1]].map((i) => i._id)});
         encounter1Id = res1.body._id;
       });
       it("should send 200 to normal user and update encounter", async () => {
         const res = await request(server)
           .put("/encounters/" + encounter0Id)
           .set("Authorization", "Bearer " + token0)
-          .send(combatants.map((i) => i._id));
+          .send({ combatantIds: combatants.map((i) => i._id) });
         expect(res.statusCode).toEqual(200);
         const storedEncounter = await Encounter.findOne().lean();
         expect(storedEncounter).toMatchObject({
@@ -154,7 +159,7 @@ describe("/encounter", () => {
         const res = await request(server)
           .put("/encounters/" + fakeEncounterId)
           .set("Authorization", "Bearer " + adminToken)
-          .send([combatants[1]].map((i) => i._id));
+          .send({ combatantIds: [combatants[1]].map((i) => i._id) });
         expect(res.statusCode).toEqual(400);
       });
     });
@@ -165,12 +170,12 @@ describe("/encounter", () => {
         const res0 = await request(server)
           .post("/encounters")
           .set("Authorization", "Bearer " + token0)
-          .send([combatants[0], combatants[1], combatants[1]].map((i) => i._id));
+          .send({ name: "encounter0", combatantIds: [combatants[0], combatants[1], combatants[1]].map((i) => i._id)});
         encounter0Id = res0.body._id;
         const res1 = await request(server)
           .post("/encounters")
           .set("Authorization", "Bearer " + adminToken)
-          .send([combatants[1]].map((i) => i._id));
+          .send({ name: "encounter1", combatantIds: [combatants[1]].map((i) => i._id)});
         encounter1Id = res1.body._id;
       });
       it('should return the user for the encounter', async () => {
@@ -198,12 +203,12 @@ describe("/encounter", () => {
         const res0 = await request(server)
           .post("/encounters")
           .set("Authorization", "Bearer " + token0)
-          .send([combatants[0], combatants[1], combatants[1]].map((i) => i._id));
+          .send({ name: "encounter0", combatantIds: [combatants[0], combatants[1], combatants[1]].map((i) => i._id)});
         encounter0Id = res0.body._id;
         const res1 = await request(server)
           .post("/encounters")
           .set("Authorization", "Bearer " + adminToken)
-          .send([combatants[1]].map((i) => i._id));
+          .send({ name: "encounter1", combatantIds: [combatants[1]].map((i) => i._id)});
         encounter1Id = res1.body._id;
       });
       it("should send 200 to normal user with their encounter", async () => {
@@ -215,6 +220,7 @@ describe("/encounter", () => {
         expect(res.body).toMatchObject({
           combatants: [combatant0, combatant1, combatant1],
           userId: (await User.findOne({ email: user0.email }))._id.toString(),
+          name: "encounter0"
         });
       });
       it("should send 404 to normal user with someone else's encounter", async () => {
@@ -232,7 +238,8 @@ describe("/encounter", () => {
         expect(res.statusCode).toEqual(200);
         expect(res.body).toMatchObject({
           combatants: [combatant1],
-          userId: (await User.findOne({ email: user1.email }))._id.toString()
+          userId: (await User.findOne({ email: user1.email }))._id.toString(),
+          name: "encounter1"
         });
       });
       it("should send 200 to admin user with someone else's encounter", async () => {
@@ -244,6 +251,7 @@ describe("/encounter", () => {
         expect(res.body).toMatchObject({
           combatants: [combatant0, combatant1, combatant1],
           userId: (await User.findOne({ email: user0.email }))._id.toString(),
+          name: "encounter0"
         });
       });
     });
@@ -254,12 +262,12 @@ describe("/encounter", () => {
         const res0 = await request(server)
           .post("/encounters")
           .set("Authorization", "Bearer " + token0)
-          .send(combatants.map((i) => i._id));
+          .send({ name: "encounter0", combatantIds: [combatants[0], combatants[1], combatants[1]].map((i) => i._id)});
         encounter0Id = res0.body._id;
         const res1 = await request(server)
           .post("/encounters")
           .set("Authorization", "Bearer " + adminToken)
-          .send([combatants[1]].map((i) => i._id));
+          .send({ name: "encounter1", combatantIds: [combatants[1]].map((i) => i._id)});
         encounter1Id = res1.body._id;
       });
       it("should send 200 to normal user with their one encounter", async () => {
@@ -270,8 +278,9 @@ describe("/encounter", () => {
         expect(res.statusCode).toEqual(200);
         expect(res.body).toMatchObject([
           {
-            combatants: [combatants[0]._id.toString(), combatants[1]._id.toString()],
+            combatants: [combatants[0]._id.toString(), combatants[1]._id.toString(), combatants[1]._id.toString()],
             userId: (await User.findOne({ email: user0.email }))._id.toString(),
+            name: "encounter0"
           },
         ]);
       });
@@ -283,7 +292,7 @@ describe("/encounter", () => {
         expect(res.statusCode).toEqual(200);
         expect(res.body).toMatchObject([
           {
-            combatants: [combatants[0]._id.toString(), combatants[1]._id.toString()],
+            combatants: [combatants[0]._id.toString(), combatants[1]._id.toString(), combatants[1]._id.toString()],
             userId: (await User.findOne({ email: user0.email }))._id.toString(),
           },
           {
@@ -291,6 +300,42 @@ describe("/encounter", () => {
             userId: (await User.findOne({ email: user1.email }))._id.toString(),
           },
         ]);
+      });
+    });
+    describe("GET /search", () => {
+      let encounter0Id, encounter1Id;
+      beforeEach(async () => {
+        const res0 = await request(server)
+          .post("/encounters")
+          .set("Authorization", "Bearer " + token0)
+          .send({ name: "encounter0", combatantIds: [combatants[0], combatants[1], combatants[1]].map((i) => i._id)});
+        encounter0Id = res0.body._id;
+        const res1 = await request(server)
+          .post("/encounters")
+          .set("Authorization", "Bearer " + adminToken)
+          .send({ name: "encounter1", combatantIds: [combatants[1]].map((i) => i._id)});
+        encounter1Id = res1.body._id;
+      });
+      it("should send 200 to normal user with their one encounter", async () => {
+        const res = await request(server)
+          .get("/encounters/search")
+          .set("Authorization", "Bearer " + token0)
+          .query({ name: "encounter0" });
+        expect(res.statusCode).toEqual(200);
+        expect(res.body).toMatchObject([
+          {
+            combatants: [combatants[0]._id.toString(), combatants[1]._id.toString(), combatants[1]._id.toString()],
+            userId: (await User.findOne({ email: user0.email }))._id.toString(),
+            name: "encounter0"
+          },
+        ]);
+      });
+      it("should send 404 to normal user with someone else's encounter", async () => {
+        const res = await request(server)
+          .get("/encounters/search")
+          .set("Authorization", "Bearer " + token0)
+          .query({ name: "encounter1"});
+        expect(res.statusCode).toEqual(404);
       });
     });
   });

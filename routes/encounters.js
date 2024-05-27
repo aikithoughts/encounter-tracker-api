@@ -10,7 +10,8 @@ const mongoose = require('mongoose');
 router.post('/', isAuthenticated, async (req, res) => {
     try {
         const userId = req.userId;
-        const combatantIds = req.body;
+        //const combatantIds = req.body;
+        const { name, combatantIds } = req.body;
 
         // Validate each combatant ID
         for (const combatantId of combatantIds) {
@@ -25,7 +26,8 @@ router.post('/', isAuthenticated, async (req, res) => {
         }));
 
         // Create the encounter with the fetched combatants
-        const createdEncounter = await encounterDAO.createEncounter(userId, combatants);
+        //const createdEncounter = await encounterDAO.createEncounter(userId, combatants);
+        const createdEncounter = await encounterDAO.createEncounter(userId, name, combatants);
 
         // Respond with the created encounter
         res.status(200).json(createdEncounter);
@@ -39,7 +41,7 @@ router.post('/', isAuthenticated, async (req, res) => {
 router.put('/:id', isAuthenticated, async (req, res) => {
     try {
         const encounterId = req.params.id;
-        const combatantIds = req.body;
+        const { name, combatantIds } = req.body;
         const userId = req.userId; // Assuming the user ID is available in the request after authentication
 
         // Get the user
@@ -82,20 +84,46 @@ router.put('/:id', isAuthenticated, async (req, res) => {
     }
 });
 
+// Search for encounters by name
+router.get("/search", isAuthenticated, async (req, res) => {
+    try {
+        const userId = req.userId; // Assuming user ID and role are included in the request object
+        const { name } = req.query;
+    
+        const encounters = await encounterDAO.searchEncountersByUserIdAndName(userId, name);
+
+        // If no encounters are found, return a 404 status code
+        if (encounters.length === 0) {
+            return res.status(404).json({ message: "No encounters found" });
+          }
+
+        // Check if any encounter does not belong to the requesting user or if the user is not an admin
+        const unauthorizedEncounter = encounters.find(encounter => encounter.userId.toString() !== userId && !req.user.roles.includes("admin"));
+        if (unauthorizedEncounter) {
+        return res.status(404).send("Unauthorized request.");
+        }
+    
+        res.status(200).json(encounters);
+      } catch (error) {
+        console.error("Error searching encounters:", error);
+        res.status(500).json({ message: "An error occurred while searching encounters" });
+      }
+});
+
 // Get a user for a specific encounter
 router.get('/:id/user', async (req, res) => {
     console.log("in get user for encounter");
     try {
-      console.log("get user for encounter", req.params.id);
-      const user = await encounterDAO.getUserForEncounter(req.params.id);
-      if (!user) {
-        return res.status(404).send('User not found');
-      }
-      res.json(user);
+        console.log("get user for encounter", req.params.id);
+        const user = await encounterDAO.getUserForEncounter(req.params.id);
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+        res.json(user);
     } catch (error) {
-      res.status(500).send('Internal server error');
+        res.status(500).send('Internal server error');
     }
-  });
+});
 
 // Get a specific encounter by ID
 router.get('/:id', isAuthenticated, async (req, res) => {
@@ -126,8 +154,6 @@ router.get('/:id', isAuthenticated, async (req, res) => {
         res.status(500).send("Internal server error");
     }
 });
-
-
 
 // Get all encounters
 router.get('/', isAuthenticated, async (req, res) => {

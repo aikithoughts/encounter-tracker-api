@@ -3,9 +3,10 @@ const userDao = require('./user');
 
 module.exports = {};
 
-module.exports.createEncounter = async (userId, combatants) => {
+module.exports.createEncounter = async (userId, name, combatants) => {
     const newEncounter = new Encounter({
         userId: userId,
+        name: name,
         combatants: combatants
     });
     try {
@@ -67,7 +68,7 @@ module.exports.getUserForEncounter = async (id) => {
 module.exports.updateEncounterById = async (id, combatants) => {
     try {
         const encounter = await Encounter.findOne({ _id: id });
-        
+
         if (!encounter) {
             throw new Error("Encounter not found!");
         }
@@ -77,11 +78,23 @@ module.exports.updateEncounterById = async (id, combatants) => {
 
         // save the item
         const updatedEncounter = await encounter.save();
-        
+
         return updatedEncounter;
     } catch (error) {
         console.log(error);
         throw error;
     }
-    
+
+}
+
+module.exports.searchEncountersByUserIdAndName = async (userId, name) => {
+    try {
+        // Perform case-insensitive search using regex, and filter by user ID
+        const encounters = await Encounter.find({ userId, name: { $regex: new RegExp(name, "i") } });
+        console.log("encounters DAO", encounters);
+        return encounters;
+    } catch (error) {
+        console.error("Error searching encounters:", error);
+        throw new Error("An error occurred while searching encounters");
+    }
 }
