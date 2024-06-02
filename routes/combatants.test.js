@@ -100,6 +100,26 @@ describe("/combatants", () => {
         const savedCombatant = await Combatant.findOne({ _id: res.body._id }).lean();
         expect(savedCombatant).toMatchObject(combatant);
       });
+      it('should return 500 and internal server error message when DAO throws an error', async () => {
+        // Save original implementation
+        const originalCreateCombatant = combatantDAO.createCombatant;
+
+        // Mock createCombatant to throw an error only for this test
+        jest.spyOn(combatantDAO, 'createCombatant').mockImplementation(() => {
+          throw new Error("Simulated error");
+        });
+
+        const res = await request(server)
+          .post('/combatants')
+          .set('Authorization', 'Bearer ' + adminToken) // Assuming adminToken is defined in your test setup
+          .send({ name: 'Test Combatant', initiative: 10, hitpoints: 100 });
+
+        // Restore original implementation
+        combatantDAO.createCombatant = originalCreateCombatant;
+
+        expect(res.statusCode).toEqual(500);
+        expect(res.text).toEqual("Internal server error");
+      });
     });
 
     describe.each([combatant0, combatant1])("PUT / combatant %#", (combatant) => {
@@ -120,6 +140,14 @@ describe("/combatants", () => {
         const newCombatant = await Combatant.findById(originalCombatant._id).lean();
         newCombatant._id = newCombatant._id.toString();
         expect(newCombatant).toMatchObject(originalCombatant);
+      });
+      it("should send 400 if hitpoints are missing", async () => {
+        const incompleteCombatant = { name: "Bilwin", initiative: 10 };
+        const res = await request(server)
+          .put("/combatants/" + originalCombatant._id)
+          .set("Authorization", "Bearer " + adminToken)
+          .send(incompleteCombatant);
+        expect(res.statusCode).toEqual(400);
       });
       it("should send 200 to admin user and update combatant", async () => {
         const res = await request(server)
@@ -156,7 +184,7 @@ describe("/combatants", () => {
         newCombatant._id = newCombatant._id.toString();
         expect(newCombatant).toMatchObject(originalCombatant);
       });
-    
+
       it("should send 200 to admin user and delete combatant", async () => {
         const res = await request(server)
           .delete("/combatants/" + originalCombatant._id)

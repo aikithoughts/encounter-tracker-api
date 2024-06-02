@@ -25,6 +25,7 @@ router.put('/:id', isAuthenticated, isAdmin, async (req, res) => {
 
         // Check if name, initiative, and hitpoints are provided
         if (!name || !initiative || !hitpoints) {
+            console.log("checking for all values");
             return res.status(400).send('Name, initiative, and hitpoints are required');
         }
 

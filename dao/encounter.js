@@ -87,6 +87,24 @@ module.exports.updateEncounterById = async (id, combatants) => {
 
 }
 
+module.exports.deleteEncounterById = async (id) => {
+    try {
+        const encounter = await Encounter.findById(id);
+
+        if (!encounter) {
+            throw new Error("Encounter not found!");
+        }
+
+        await Encounter.deleteOne({ _id: id });
+
+        return { message: "Encounter deleted successfully" };
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+}
+
+
 
 module.exports.searchEncountersByUserIdAndName = async (userId, name) => {
     try {

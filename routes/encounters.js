@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const router = Router();
 const isAuthenticated = require('../middleware/isAuthenticated');
+const isAdmin = require('../middleware/isAdmin');
 const encounterDAO = require('../dao/encounter');
 const combatantDAO = require('../dao/combatant');
 const userDAO = require('../dao/user');
@@ -10,11 +11,11 @@ const mongoose = require('mongoose');
 router.post('/', isAuthenticated, async (req, res) => {
     try {
         const userId = req.userId;
-        //const combatantIds = req.body;
         const { name, combatantIds } = req.body;
 
         // Validate each combatant ID
         for (const combatantId of combatantIds) {
+            console.log("checking combatantIds", combatantId);
             if (!mongoose.Types.ObjectId.isValid(combatantId)) {
                 return res.status(400).send("Invalid combatant ID");
             }
@@ -26,7 +27,6 @@ router.post('/', isAuthenticated, async (req, res) => {
         }));
 
         // Create the encounter with the fetched combatants
-        //const createdEncounter = await encounterDAO.createEncounter(userId, combatants);
         const createdEncounter = await encounterDAO.createEncounter(userId, name, combatants);
 
         // Respond with the created encounter
@@ -78,6 +78,23 @@ router.put('/:id', isAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Error updating encounter:', error);
         res.status(500).send("Internal server error");
+    }
+});
+
+// Delete an existing encounter
+router.delete('/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const result = await encounterDAO.deleteEncounterById(id);
+        res.status(200).json(result);
+    } catch (error) {
+        console.error("Error deleting encounter:", error);
+        if (error.message === "Encounter not found!") {
+            res.status(400).send(error.message);
+        } else {
+            res.status(500).send("Internal server error");
+        }
     }
 });
 
