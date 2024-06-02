@@ -4,6 +4,8 @@ const testUtils = require("../test-utils");
 
 const User = require("../models/user");
 const Combatant = require("../models/combatant");
+const combatantDAO = require("../dao/combatant");
+const isAuthenticated = require("../middleware/isAuthenticated");
 
 describe("/combatants", () => {
   beforeAll(testUtils.connectDB);
@@ -131,6 +133,37 @@ describe("/combatants", () => {
           ...originalCombatant,
           hitpoints: originalCombatant.hitpoints + 1,
         });
+      });
+    });
+
+    // DELETE a combatant
+    describe.each([combatant0, combatant1])("DELETE / combatant %#", (combatant) => {
+      let originalCombatant;
+      beforeEach(async () => {
+        const res = await request(server)
+          .post("/combatants")
+          .set("Authorization", "Bearer " + adminToken)
+          .send(combatant);
+        originalCombatant = res.body;
+      });
+      it("should send 403 to normal user and not delete combatant", async () => {
+        const res = await request(server)
+          .delete("/combatants/" + originalCombatant._id)
+          .set("Authorization", "Bearer " + token0);
+        expect(res.statusCode).toEqual(403);
+        const newCombatant = await Combatant.findById(originalCombatant._id).lean();
+        expect(newCombatant).not.toBeNull();
+        newCombatant._id = newCombatant._id.toString();
+        expect(newCombatant).toMatchObject(originalCombatant);
+      });
+    
+      it("should send 200 to admin user and delete combatant", async () => {
+        const res = await request(server)
+          .delete("/combatants/" + originalCombatant._id)
+          .set("Authorization", "Bearer " + adminToken);
+        expect(res.statusCode).toEqual(200);
+        const newCombatant = await Combatant.findById(originalCombatant._id).lean();
+        expect(newCombatant).toBeNull();
       });
     });
 

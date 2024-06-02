@@ -87,11 +87,11 @@ module.exports.updateEncounterById = async (id, combatants) => {
 
 }
 
+
 module.exports.searchEncountersByUserIdAndName = async (userId, name) => {
     try {
         // Perform case-insensitive search using regex, and filter by user ID
         const encounters = await Encounter.find({ userId, name: { $regex: new RegExp(name, "i") } });
-        console.log("encounters DAO", encounters);
         return encounters;
     } catch (error) {
         console.error("Error searching encounters:", error);

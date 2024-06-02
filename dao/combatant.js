@@ -39,6 +39,23 @@ module.exports.updateCombatantById = async (id, name, initiative, hitpoints) => 
     }
 }
 
+module.exports.deleteCombatantById = async (id) => {
+    try {
+        const combatant = await Combatant.findById(id);
+
+        if (!combatant) {
+            throw new Error("Combatant not found!");
+        }
+
+        await Combatant.deleteOne({ _id: id });
+
+        return { message: "Combatant deleted successfully" };
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
+}
+
 module.exports.getAllCombatants = async () => {
     try {
         const foundCombatants = await Combatant.find().lean();

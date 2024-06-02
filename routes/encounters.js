@@ -50,11 +50,8 @@ router.put('/:id', isAuthenticated, async (req, res) => {
         // Fetch the encounter from the database
         const encounter = await encounterDAO.getEncounterById(encounterId);
 
-        console.log("does encounter exist?", encounter);
-
         // Check if the encounter exists
         if (!encounter) {
-            console.log("no?");
             return res.status(400).send("Encounter not found");
         }
         // Make sure the user is the owner of the encounter or has admin role
@@ -112,9 +109,7 @@ router.get("/search", isAuthenticated, async (req, res) => {
 
 // Get a user for a specific encounter
 router.get('/:id/user', async (req, res) => {
-    console.log("in get user for encounter");
     try {
-        console.log("get user for encounter", req.params.id);
         const user = await encounterDAO.getUserForEncounter(req.params.id);
         if (!user) {
             return res.status(404).send('User not found');

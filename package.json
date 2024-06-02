@@ -17,6 +17,7 @@
   "description": "final project for JavaScript 330 course",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "jest --runInBand --coverage --coverageDirectory='coverage'"
   },
   "repository": {

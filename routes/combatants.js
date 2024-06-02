@@ -46,6 +46,19 @@ router.put('/:id', isAuthenticated, isAdmin, async (req, res) => {
     }
 });
 
+// Delete an existing combatant
+router.delete('/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const result = await combatantDAO.deleteCombatantById(id);
+        res.status(200).json(result);
+    } catch (error) {
+        console.error("Error deleting combatant:", error);
+        res.status(500).send("Internal server error");
+    }
+});
+
 // Get a specific combatant by ID
 router.get('/:id', isAuthenticated, async (req, res) => {
     try {
