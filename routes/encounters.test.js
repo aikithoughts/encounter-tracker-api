@@ -92,7 +92,6 @@ describe("/encounter", () => {
         const res = await request(server)
           .post("/encounters")
           .set("Authorization", "Bearer " + token0)
-          // .send(combatants.map((i) => i._id));
           .send({ name: "Test", combatantIds: combatants.map((i) => i._id) })
         expect(res.statusCode).toEqual(200);
         const storedEncounter = await Encounter.findOne().lean();
@@ -154,6 +153,25 @@ describe("/encounter", () => {
           userId: (await User.findOne({ email: user0.email }).lean())._id,
         });
       });
+      it("should send 200 to admin user and update encounter", async () => {
+        const res = await request(server)
+          .put("/encounters/" + encounter0Id)
+          .set("Authorization", "Bearer " + adminToken)
+          .send({ combatantIds: combatants.map((i) => i._id) });
+        expect(res.statusCode).toEqual(200);
+        const storedEncounter = await Encounter.findOne().lean();
+        expect(storedEncounter).toMatchObject({
+          combatants: combatants.map((i) => i._id),
+          userId: (await User.findOne({ email: user0.email }).lean())._id,
+        });
+      });
+      it("should send 403 to normal user with someone else's encounter", async () => {
+        const res = await request(server)
+          .put("/encounters/" + encounter1Id)
+          .set("Authorization", "Bearer " + token0)
+          .send({ combatantIds: [combatants[1]].map((i) => i._id) });
+        expect(res.statusCode).toEqual(403);
+      });
       it("should send 400 with a bad encounter _id", async () => {
         const fakeEncounterId = new mongoose.Types.ObjectId();
         const res = await request(server)
@@ -179,9 +197,18 @@ describe("/encounter", () => {
         encounter1Id = res1.body._id;
       });
 
-      it("should send 403 to normal user and not delete encounter", async () => {
+      it("should send 200 when normal user attempts to delete an encounter they own", async () => {
         const res = await request(server)
           .delete("/encounters/" + encounter0Id)
+          .set("Authorization", "Bearer " + token0);
+        expect(res.statusCode).toEqual(200);
+        const storedEncounter = await Encounter.findById(encounter0Id).lean();
+        expect(storedEncounter).toBeNull();
+      });
+
+      it("should send 403 to normal user and not delete encounter", async () => {
+        const res = await request(server)
+          .delete("/encounters/" + encounter1Id)
           .set("Authorization", "Bearer " + token0);
         expect(res.statusCode).toEqual(403);
         const storedEncounter = await Encounter.findById(encounter0Id).lean();

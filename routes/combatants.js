@@ -25,7 +25,6 @@ router.put('/:id', isAuthenticated, isAdmin, async (req, res) => {
 
         // Check if name, initiative, and hitpoints are provided
         if (!name || !initiative || !hitpoints) {
-            console.log("checking for all values");
             return res.status(400).send('Name, initiative, and hitpoints are required');
         }
 
@@ -47,7 +46,6 @@ router.put('/:id', isAuthenticated, isAdmin, async (req, res) => {
     }
 });
 
-// Delete an existing combatant
 router.delete('/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
         const id = req.params.id;
@@ -56,7 +54,14 @@ router.delete('/:id', isAuthenticated, isAdmin, async (req, res) => {
         res.status(200).json(result);
     } catch (error) {
         console.error("Error deleting combatant:", error);
-        res.status(500).send("Internal server error");
+
+        if (error.message === "Combatant not found!") {
+            res.status(404).json({ error: error.message });
+        } else if (error.message === "Cannot delete combatant as it is still in use by an encounter.") {
+            res.status(400).json({ error: error.message });
+        } else {
+            res.status(500).send("Internal server error");
+        }
     }
 });
 
@@ -75,7 +80,7 @@ router.get('/:id', isAuthenticated, async (req, res) => {
 // Get all combatants
 router.get('/', isAuthenticated, async (req, res) => {
     try {
-        const user = await userDAO.getUserById(req.userId);  // Ensure this is needed or remove if not used
+        const user = await userDAO.getUserById(req.userId);
         const combatants = await combatantDAO.getAllCombatants();
         res.status(200).json(combatants);
     } catch (error) {

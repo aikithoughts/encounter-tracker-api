@@ -24,7 +24,6 @@ const isAuthenticated = async (req, res, next) => {
         req.userId = decoded._id; // Extract user ID from the decoded JWT payload
         next();
     } catch (error) {
-        //console.error("JWT Verification Error:", error); // Log any JWT verification errors
         return res.status(401).send("Unauthorized. Invalid token.");
     }
 };

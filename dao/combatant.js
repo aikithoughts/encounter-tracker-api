@@ -1,6 +1,13 @@
 const Combatant = require('../models/combatant');
+const Encounter = require('../models/encounter');
 
 module.exports = {};
+
+// Function to check if a combatant is in use by any encounter
+const isCombatantInUse = async (combatantId) => {
+    const encounter = await Encounter.findOne({ combatants: combatantId });
+    return !!encounter; // Returns true if combatant is found in any encounter
+};
 
 module.exports.createCombatant = async (name, initiative, hitpoints) => {
     const newCombatant = new Combatant({
@@ -39,12 +46,20 @@ module.exports.updateCombatantById = async (id, name, initiative, hitpoints) => 
     }
 }
 
+
 module.exports.deleteCombatantById = async (id) => {
     try {
         const combatant = await Combatant.findById(id);
 
         if (!combatant) {
             throw new Error("Combatant not found!");
+        }
+
+        // Check if the combatant is in use by any encounter
+        const inUse = await isCombatantInUse(id);
+
+        if (inUse) {
+            throw new Error("Cannot delete combatant as it is still in use by an encounter.");
         }
 
         await Combatant.deleteOne({ _id: id });
@@ -54,7 +69,7 @@ module.exports.deleteCombatantById = async (id) => {
         console.log(error);
         throw error;
     }
-}
+};
 
 module.exports.getAllCombatants = async () => {
     try {

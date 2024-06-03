@@ -193,6 +193,35 @@ describe("/combatants", () => {
         const newCombatant = await Combatant.findById(originalCombatant._id).lean();
         expect(newCombatant).toBeNull();
       });
+      it("should send 400 if combatant is in use by an encounter", async () => {
+        // Create a combatant
+        const resCombatant = await request(server)
+          .post("/combatants")
+          .set("Authorization", "Bearer " + adminToken)
+          .send(combatant);
+        expect(resCombatant.statusCode).toEqual(200);
+        expect(resCombatant.body).toMatchObject(combatant);
+        const savedCombatant = await Combatant.findOne({ _id: resCombatant.body._id }).lean();
+        expect(savedCombatant).toMatchObject(combatant);
+
+        // Create an encounter
+        const resEncounter = await request(server)
+          .post("/encounters")
+          .set("Authorization", "Bearer " + token0)
+          .send({ name: "Test", combatantIds: [savedCombatant._id] });
+        expect(resEncounter.statusCode).toEqual(200);
+
+        //Try to delete the combatant
+        const resDelete = await request(server)
+          .delete("/combatants/" + savedCombatant._id)
+          .set("Authorization", "Bearer " + adminToken);
+        expect(resDelete.statusCode).toEqual(400);
+        expect(resDelete.body.error).toBe("Cannot delete combatant as it is still in use by an encounter.");
+        const newCombatant = await Combatant.findById(originalCombatant._id).lean();
+        expect(newCombatant).not.toBeNull();
+        newCombatant._id = newCombatant._id.toString();
+        expect(newCombatant).toMatchObject(originalCombatant);
+      });
     });
 
     describe.each([combatant0, combatant1])("GET /:id combatant %#", (combatant) => {

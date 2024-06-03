@@ -16,5 +16,6 @@ const encounterSchema = new mongoose.Schema({
 });
 
 encounterSchema.index({ userId: 1, name: 1 });
+encounterSchema.index({ combatants: 1 });
 
 module.exports = mongoose.model("encounters", encounterSchema);

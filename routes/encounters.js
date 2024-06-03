@@ -15,7 +15,6 @@ router.post('/', isAuthenticated, async (req, res) => {
 
         // Validate each combatant ID
         for (const combatantId of combatantIds) {
-            console.log("checking combatantIds", combatantId);
             if (!mongoose.Types.ObjectId.isValid(combatantId)) {
                 return res.status(400).send("Invalid combatant ID");
             }
@@ -56,7 +55,7 @@ router.put('/:id', isAuthenticated, async (req, res) => {
         }
         // Make sure the user is the owner of the encounter or has admin role
         if (encounter.userId.toString() !== userId && !user.roles.includes("admin")) {
-            return res.status(404).send("Unauthorized request.");
+            return res.status(403).send("Unauthorized request.");
         }
 
         // Validate each combatant ID
@@ -82,12 +81,28 @@ router.put('/:id', isAuthenticated, async (req, res) => {
 });
 
 // Delete an existing encounter
-router.delete('/:id', isAuthenticated, isAdmin, async (req, res) => {
+router.delete('/:id', isAuthenticated, async (req, res) => {
     try {
-        const id = req.params.id;
+        const userId = req.userId;
+        const encounterId = req.params.id;
 
-        const result = await encounterDAO.deleteEncounterById(id);
-        res.status(200).json(result);
+        // Get the user
+        const user = await userDAO.getUserById(userId);
+
+        // Fetch the encounter from the database
+        const encounter = await encounterDAO.getEncounterById(encounterId);
+
+        // Check if the encounter exists
+        if (!encounter) {
+            return res.status(400).send("Encounter not found");
+        }
+        // Make sure the user is the owner of the encounter or has admin role
+        if (encounter.userId.toString() !== userId && !user.roles.includes("admin")) {
+            return res.status(403).send("Unauthorized request.");
+        }
+
+        const deletedEncounter = await encounterDAO.deleteEncounterById(encounterId);
+        res.status(200).json(deletedEncounter);
     } catch (error) {
         console.error("Error deleting encounter:", error);
         if (error.message === "Encounter not found!") {
